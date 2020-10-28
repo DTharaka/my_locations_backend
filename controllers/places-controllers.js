@@ -4,6 +4,8 @@ const { validationResult } = require('express-validator');
 const HttpErrot = require('../models/http-error');
 const getCoordinatesFromAddress = require('../utils/location');
 const getCoordinatesForAddress = require('../utils/location');
+const Place = require('../models/place');
+const HttpError = require('../models/http-error');
 
 let DUMMY_PLACES = [
     {
@@ -20,18 +22,21 @@ let DUMMY_PLACES = [
     }
 ];
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async(req, res, next) => {
     const placeId = req.params.pid;
 
-    const place = DUMMY_PLACES.find((p) => {
-        return p.id === placeId
-    });
+    try {
+        const place = await Place.findById(placeId);
+    } catch (err) {
+        const error = new HttpError('Something went wrong! Could not find a place', 500)
+    }
+
+    
 
     if (!place) {
         // return res.status(404).json({message: 'Could not find a place for provided id'});
 
-        const error = new Error('Could not find a place for provided id');
-        error.code = 404;
+        const error = new HttpError('Could not find a place for provided id', 404);
         return next(error);
     }
 
@@ -76,17 +81,23 @@ const createPlace = async (res, req, next) => {
         return next(error);
     }
 
-    const createdPlace = {
-        id: uuidv4(),
+    const createdPlace = new Place({
         title: title,
         description: description,
         address: address,
-        creator: creator,
-        location: coordinates
-    };
+        location: coordinates,
+        image: 'https://static1.squarespace.com/static/58fbfecf725e25a3d1966494/5902947920099eda52c5ac82/5a01f46bd63352b3be374974/1554667940303/?format=1500w',
+        creator: creator
+    });
 
-    DUMMY_PLACES.push(createdPlace);
-
+    try {
+        await createdPlace.save();
+    } catch (err) {
+        const error = new HttpError(
+            'Creating place failed, Please try again !', 500
+        );
+        return next(error);
+    }
     res.status(201).json({place: createdPlace});
 };
 

@@ -5,26 +5,32 @@ const { validationResult } = require('express-validator');
 const HttpError = require('../models/http-error');
 const User = require('../models/user');
 
-const DUMMY_USERS= [
-    {
-        id: 'u1', 
-        name: 'test',
-        email: 'test@test.com', 
-        password: 'test@123',
-    }
-];
+const getUsers = async (req,res,next) => {
 
-const getUsers = (req,res,next) => {
-    res.status(200).json({users: DUMMY_USERS})
+    let users;
+    try {
+        users = await User.find({}, '-password');
+    } catch (err) {
+        const error = new HttpError('Fetching users failed, Please try again',500);
+        return next(error);
+    }
+    res.json({users: users.map(user => user.toObject({ getters: true }))});
 };
 
-const loginUser = (req,res,next) => {
+const loginUser = async(req,res,next) => {
     const { email, password } = req.body;
 
-    const identifiedUser = DUMMY_USERS.find((p) => {u.email === email});
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ email: email });
+    } catch (err) {
+        const error = new HttpError('Signup failed, please try again', 500);
+        return next(error);
+    }
 
-    if (!identifiedUser || identifiedUser.id !== password) {
-        throw new HttpError('Could not identify user !', 401);
+    if (!existingUser || existingUser.id !== password) {
+        const error =  new HttpError('Could not identify user !', 401);
+        return next(error);
     }
 
     res.json({message: 'Login Successful !'});
@@ -57,7 +63,7 @@ const signUpUsers = async(req,res,next) => {
         email: email,
         password: password,
         image: '',
-        places
+        places: []
     });
 
     try {

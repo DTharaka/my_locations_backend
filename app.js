@@ -29,7 +29,7 @@ app.use((error, req, res, next)=> {
 })
 
 mongoose
-    .connect('mongodb+srv://username:password@cluster0.xch4n.mongodb.net/places?retryWrites=true&w=majority', {useNewUrlParser: true})
+    .connect('mongodb+srv://@cluster0.xch4n.mongodb.net/places?retryWrites=true&w=majority', {useNewUrlParser: true , useUnifiedTopology: true })
     .then(() => {
         app.listen(5000);
     })
